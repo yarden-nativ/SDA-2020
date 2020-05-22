@@ -1,0 +1,58 @@
+#written by Yarden Nativ
+#this function simulates a hazard function of poisson neuron
+# with refractory period- calculation and plot
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Generate a poisson neuron with refractory period
+rate = 50 #in spikes/sec
+sample=1000 #in ms
+rateProb= rate/sample
+refPer=10 #in ms
+duration = 600000 #in ms
+
+spikeVec=np.zeros(duration)
+idx=0
+while idx<duration:
+    randNum=np.random.uniform(low=0, high=1)
+    if randNum<=rateProb:
+        spikeVec[idx]=1
+        idx=idx+refPer+1
+    else:
+        idx=idx+1
+
+####calculting hazard function
+
+#first we calculate TIH and TIH probabilities
+spikeTimes=np.where(spikeVec==1)
+spikeTimes=spikeTimes[0]
+TIvec=np.zeros(spikeTimes.size-1)
+for TI_idx in range(TIvec.size):
+   ISI=spikeTimes[TI_idx+1]-spikeTimes[TI_idx]
+   TIvec[TI_idx]=ISI
+
+TIProbVec=[]
+numOfIntervals=TIvec.size
+for TIH_idx in range(int(max(TIvec))):
+    numISIs=np.where(TIvec==TIH_idx)
+    numISIs=numISIs[0]
+    ISIprob=numISIs.size/numOfIntervals
+    TIProbVec.append(ISIprob)
+
+#now we calculate servivor function
+survivorVec=[];
+for cdf_id in range(len(TIProbVec)):
+    survivorVec.append(1-sum(TIProbVec[0:cdf_id]))
+
+#calculatin hazard function (note servivor vec is 1 idx below because of discrete distribution of TIH probabilities)
+hazVec=[TIProbVec[1]]
+for haz_id in range(1,len(TIProbVec)):
+    hazVal=TIProbVec[haz_id]/survivorVec[haz_id-1]
+    hazVec.append(hazVal)
+
+#plotting hazard function
+plt.plot(hazVec)
+plt.title('Hazard function for single Poisson process with refractory Period')
+plt.xlabel('Interval [ms]')
+plt.ylabel('ISI(t)/Survivor(t-1)')
